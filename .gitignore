@@ -1,7 +1,8 @@
 .idea
 build
 out
-*.tfstate
+*.tfstate*
 .terraform/
 *.tfvars
-*.tfvars
+*.backup
+tfplan
