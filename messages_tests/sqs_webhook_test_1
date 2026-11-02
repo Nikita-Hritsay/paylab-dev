@@ -1,0 +1,1 @@
+aws sqs send-message --queue-url "arn:aws:sqs:eu-central-1:384351444433:paylab-dev-webhook-events" --message-body "Order processing payload" --message-attributes '{"AccountId": {"DataType": "Number", "StringValue": "98765"},"Region": {"DataType": "String", "StringValue": "us-east-1"}}'
