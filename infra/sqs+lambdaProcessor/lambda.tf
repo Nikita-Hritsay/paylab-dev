@@ -1,5 +1,5 @@
 # IAM role for Lambda execution
-data "aws_iam_policy_document" "assume_role" {
+data "aws_iam_policy_document" "paylab-dev_lambda_assume_role" {
   statement {
     effect = "Allow"
 
@@ -13,12 +13,12 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 resource "aws_iam_role" "lambda_execution_role" {
-  name               = "lambda_execution_role"
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+  name               = "paylab-dev_lambda_execution_role"
+  assume_role_policy = data.aws_iam_policy_document.paylab-dev_lambda_assume_role.json
 }
 
 # Package the Lambda function code
-data "archive_file" "lambda_code" {
+data "archive_file" "paylab-dev_lambda" {
   type        = "zip"
   source_file = "${path.module}/lambda/index.js"
   output_path = "${path.module}/lambda/function.zip"
@@ -26,11 +26,11 @@ data "archive_file" "lambda_code" {
 
 # Lambda function
 resource "aws_lambda_function" "lambda_processor" {
-  filename      = data.archive_file.lambda_code.output_path
+  filename      = data.archive_file.paylab-dev_lambda.output_path
   function_name = "example_lambda_function"
   role          = aws_iam_role.lambda_execution_role.arn
   handler       = "index.handler"
-  code_sha256   = data.archive_file.lambda_code.output_base64sha256
+  code_sha256   = data.archive_file.paylab-dev_lambda.output_base64sha256
 
   runtime = "nodejs24.x"
 }
