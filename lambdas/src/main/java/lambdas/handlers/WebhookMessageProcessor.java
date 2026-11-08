@@ -1,4 +1,4 @@
-package activities.lambdas.handlers;
+package lambdas.handlers;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -9,10 +9,6 @@ public class WebhookMessageProcessor implements RequestHandler<SQSEvent, SQSBatc
     @Override
     public SQSBatchResponse handleRequest(SQSEvent sqsEvent, Context context) {
         System.out.println(sqsEvent);
-        sqsEvent.getRecords().forEach(record -> {
-            System.out.println(record.getBody());
-            System.out.println(record.getMessageId());
-        });
 
         return new SQSBatchResponse();
     }

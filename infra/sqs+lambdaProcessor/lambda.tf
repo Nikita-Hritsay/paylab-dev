@@ -17,31 +17,35 @@ resource "aws_iam_role" "lambda_execution_role" {
   assume_role_policy = data.aws_iam_policy_document.paylab-dev_lambda_assume_role.json
 }
 
-# Package the Lambda function code
-data "archive_file" "paylab-dev_lambda" {
-  type        = "zip"
-  source_file = "${path.module}/lambda/index.js"
-  output_path = "${path.module}/lambda/function.zip"
+resource "aws_iam_role_policy_attachment" "lambda_basic_logs" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  role       = aws_iam_role.lambda_execution_role.name
 }
 
-# Lambda function
-resource "aws_lambda_function" "lambda_processor" {
-  filename      = data.archive_file.paylab-dev_lambda.output_path
-  function_name = "example_lambda_function"
-  role          = aws_iam_role.lambda_execution_role.arn
-  handler       = "index.handler"
-  code_sha256   = data.archive_file.paylab-dev_lambda.output_base64sha256
-
-  runtime = "nodejs24.x"
+resource "aws_iam_role_policy_attachment" "lambda_sqs" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
+  role       = aws_iam_role.lambda_execution_role.name
 }
 
-# Lambda source mapping
-resource "aws_lambda_event_source_mapping" "example" {
+resource "aws_lambda_function" "paylab-dev-webhook_processing_lambda" {
+  function_name    = "paylab-dev-webhook_processing_lambda"
+  filename         = "${path.module}/../../lambdas/target/lambdas-0.0.1-SNAPSHOT.jar"
+  role             = aws_iam_role.lambda_execution_role.arn
+  memory_size      = 512
+  timeout          = 15
+  runtime          = "java17"
+  handler          = "lambdas.handlers.WebhookMessageProcessor::handleRequest"
+  source_code_hash = filebase64sha256("${path.module}/../../lambdas/target/lambdas-0.0.1-SNAPSHOT.jar")
+}
+
+resource "aws_lambda_event_source_mapping" "paylab-dev-webhook_processing_lambda_sqs_mapping" {
+  function_name = aws_lambda_function.paylab-dev-webhook_processing_lambda.arn
   event_source_arn = aws_sqs_queue.webhook_events.arn
-  function_name    = aws_lambda_function.lambda_processor.arn
-  batch_size       = 10
+  batch_size = 5
 
   scaling_config {
     maximum_concurrency = 50
   }
+
+  depends_on = [aws_iam_role_policy_attachment.lambda_sqs]
 }
