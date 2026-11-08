@@ -1,3 +1,4 @@
+# pinning minimum Terraform version and the AWS provider version range
 terraform {
   required_version = ">= 1.5"
 
@@ -9,6 +10,7 @@ terraform {
   }
 }
 
+# storing Terraform state remotely in S3 (encrypted, with S3 native lock file to prevent concurrent runs)
 terraform {
   backend "s3" {
     bucket       = "384351444433-eu-central-1-terraform-state-bucket"
