@@ -44,9 +44,12 @@ resource "aws_lambda_function" "paylab-dev-webhook_processing_lambda" {
 
 # adding event source mapping for Lambda to poll messages from SQS queue
 resource "aws_lambda_event_source_mapping" "paylab-dev-webhook_processing_lambda_sqs_mapping" {
-  function_name = aws_lambda_function.paylab-dev-webhook_processing_lambda.arn
-  event_source_arn = aws_sqs_queue.webhook_events.arn
-  batch_size = 5
+  function_name                      = aws_lambda_function.paylab-dev-webhook_processing_lambda.arn
+  event_source_arn                   = aws_sqs_queue.webhook_events.arn
+  batch_size                         = 5
+  maximum_batching_window_in_seconds = 0
+
+  function_response_types = ["ReportBatchItemFailures"]
 
   scaling_config {
     maximum_concurrency = 50

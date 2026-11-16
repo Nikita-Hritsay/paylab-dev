@@ -6,3 +6,4 @@ out
 *.tfvars
 *.backup
 tfplan
+application.env
