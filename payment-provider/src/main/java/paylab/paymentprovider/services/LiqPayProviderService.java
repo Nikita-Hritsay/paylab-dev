@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import paylab.paymentprovider.dtos.CreateCheckoutDTO;
 import paylab.paymentprovider.dtos.CreateInvoiceDTO;
+import paylab.paymentprovider.dtos.VerifyWebhookDTO;
 import paylab.paymentprovider.exceptions.LiqPayException;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -80,5 +81,9 @@ public class LiqPayProviderService {
         params.put("version", "3");
         params.put("sandbox", "1");
         return params;
+    }
+
+    public boolean verifyWebhook(VerifyWebhookDTO dto) {
+        return LiqPayUtil.base64_encode(LiqPayUtil.sha1(this.privateKey + dto.getData() + this.privateKey)).equals(dto.getSignature());
     }
 }

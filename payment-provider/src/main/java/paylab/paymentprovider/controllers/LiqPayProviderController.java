@@ -1,12 +1,11 @@
 package paylab.paymentprovider.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import paylab.paymentprovider.dtos.CreateCheckoutDTO;
 import paylab.paymentprovider.dtos.CreateInvoiceDTO;
+import paylab.paymentprovider.dtos.VerifyWebhookDTO;
 import paylab.paymentprovider.services.LiqPayProviderService;
 
 import java.util.Map;
@@ -31,5 +30,10 @@ public class LiqPayProviderController {
     @PostMapping("/createCheckout")
     public Map<String, String> generateCheckout(@RequestBody CreateCheckoutDTO dto) {
         return liqPayProviderService.generateCheckoutSignatureAndData(dto);
+    }
+
+    @GetMapping("/verifyWebhook")
+    public boolean verifyWebhook(@RequestBody VerifyWebhookDTO dto) {
+        return liqPayProviderService.verifyWebhook(dto);
     }
 }

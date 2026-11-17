@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class CreateCheckoutDTO {
     String amount;
-    String currency;;
+    String currency;
     String description;
     String order_id;
 }
