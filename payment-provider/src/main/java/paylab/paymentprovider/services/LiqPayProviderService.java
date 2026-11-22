@@ -2,7 +2,6 @@ package paylab.paymentprovider.services;
 
 import com.liqpay.LiqPay;
 import com.liqpay.LiqPayUtil;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
@@ -85,5 +84,15 @@ public class LiqPayProviderService {
 
     public boolean verifyWebhook(VerifyWebhookDTO dto) {
         return LiqPayUtil.base64_encode(LiqPayUtil.sha1(this.privateKey + dto.getData() + this.privateKey)).equals(dto.getSignature());
+    }
+
+    public Map<String, Object>  getPaymentStatus(Integer orderId) throws Exception {
+        HashMap<String, String> params = new HashMap<>();
+        params.put("action", "status");
+        params.put("version", "3");
+        params.put("order_id", orderId.toString());
+
+        LiqPay liqpay = new LiqPay(this.publicKey, this.privateKey);
+        return liqpay.api("request", params);
     }
 }

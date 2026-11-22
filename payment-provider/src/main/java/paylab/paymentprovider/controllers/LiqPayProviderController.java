@@ -1,7 +1,6 @@
 package paylab.paymentprovider.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import paylab.paymentprovider.dtos.CreateCheckoutDTO;
 import paylab.paymentprovider.dtos.CreateInvoiceDTO;
@@ -35,5 +34,10 @@ public class LiqPayProviderController {
     @GetMapping("/verifyWebhook")
     public boolean verifyWebhook(@RequestBody VerifyWebhookDTO dto) {
         return liqPayProviderService.verifyWebhook(dto);
+    }
+
+    @GetMapping("/paymentStatus")
+    public Map<String, Object> getPaymentStatus(@RequestParam Integer orderId) throws Exception {
+        return liqPayProviderService.getPaymentStatus(orderId);
     }
 }
