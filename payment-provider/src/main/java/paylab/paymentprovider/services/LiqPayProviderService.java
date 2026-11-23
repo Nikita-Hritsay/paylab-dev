@@ -2,7 +2,6 @@ package paylab.paymentprovider.services;
 
 import com.liqpay.LiqPay;
 import com.liqpay.LiqPayUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,37 +12,42 @@ import paylab.paymentprovider.dtos.VerifyWebhookDTO;
 import paylab.paymentprovider.exceptions.LiqPayException;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class LiqPayProviderService {
+
+    private static final String API_VERSION = "3";
+    private static final String REQUEST_PATH = "request";
 
     private final LiqPay liqPay;
     private final JsonMapper jsonMapper;
-    @Value("${public_key}")
-    private String publicKey;
-    @Value("${private_key}")
-    private String privateKey;
+    private final String publicKey;
+    private final String privateKey;
+
+    public LiqPayProviderService(LiqPay liqPay,
+                                 JsonMapper jsonMapper,
+                                 @Value("${public_key}") String publicKey,
+                                 @Value("${private_key}") String privateKey) {
+        this.liqPay = liqPay;
+        this.jsonMapper = jsonMapper;
+        this.publicKey = publicKey;
+        this.privateKey = privateKey;
+    }
 
     public Map<String, Object> createInvoice(CreateInvoiceDTO dto) {
-        Map<String, String> params = new HashMap<>();
-        params.put("action", "invoice_send");
-        params.put("version", "3");
+        Map<String, String> params = baseParams("invoice_send");
         params.put("email", dto.getEmail());
         params.put("amount", dto.getAmount());
         params.put("currency", dto.getCurrency());
         params.put("order_id", dto.getOrderId());
         params.put("goods", jsonMapper.writeValueAsString(dto.getGoods()));
 
-        Map<String, Object> res;
-        try {
-            res = liqPay.api("request", params);
-        } catch (Exception e) {
-            throw new LiqPayException("LiqPay request failed", e);
-        }
+        Map<String, Object> res = callApi(params);
 
         if ("error".equals(res.get("result"))) {
             log.warn("LiqPay rejected invoice for order {}: {} ({})",
@@ -56,43 +60,62 @@ public class LiqPayProviderService {
     }
 
     public String createCheckout(CreateCheckoutDTO dto) {
-        Map<String, String> params = createDefaultCheckoutParams(dto);
-        return liqPay.cnb_form(params);
+        return liqPay.cnb_form(createCheckoutParams(dto));
     }
 
     public Map<String, String> generateCheckoutSignatureAndData(CreateCheckoutDTO dto) {
-        Map<String, String> ret = new HashMap<>();
-        Map<String, String> params = createDefaultCheckoutParams(dto);
-        params.put("public_key", this.publicKey);
-        String data = LiqPayUtil.base64_encode(JSONObject.toJSONString(params).getBytes());
-        ret.put("data", data);
-        ret.put("signature", LiqPayUtil.base64_encode(LiqPayUtil.sha1(this.privateKey + data + this.privateKey)));
-        return ret;
+        Map<String, String> params = createCheckoutParams(dto);
+        params.put("public_key", publicKey);
+
+        String data = LiqPayUtil.base64_encode(JSONObject.toJSONString(params).getBytes(StandardCharsets.UTF_8));
+
+        Map<String, String> result = new HashMap<>();
+        result.put("data", data);
+        result.put("signature", sign(data));
+        return result;
     }
 
-    private Map<String, String> createDefaultCheckoutParams(CreateCheckoutDTO dto) {
-        Map<String, String> params = new HashMap<>();
-        params.put("action", "pay");
+    public boolean verifyWebhook(VerifyWebhookDTO dto) {
+        if (dto.getData() == null || dto.getSignature() == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                sign(dto.getData()).getBytes(StandardCharsets.UTF_8),
+                dto.getSignature().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public Map<String, Object> getPaymentStatus(Integer orderId) {
+        Map<String, String> params = baseParams("status");
+        params.put("order_id", orderId.toString());
+        return callApi(params);
+    }
+
+    private Map<String, String> createCheckoutParams(CreateCheckoutDTO dto) {
+        Map<String, String> params = baseParams("pay");
         params.put("amount", dto.getAmount());
         params.put("currency", dto.getCurrency());
         params.put("description", dto.getDescription());
         params.put("order_id", dto.getOrder_id());
-        params.put("version", "3");
         params.put("sandbox", "1");
         return params;
     }
 
-    public boolean verifyWebhook(VerifyWebhookDTO dto) {
-        return LiqPayUtil.base64_encode(LiqPayUtil.sha1(this.privateKey + dto.getData() + this.privateKey)).equals(dto.getSignature());
+    private Map<String, String> baseParams(String action) {
+        Map<String, String> params = new HashMap<>();
+        params.put("action", action);
+        params.put("version", API_VERSION);
+        return params;
     }
 
-    public Map<String, Object>  getPaymentStatus(Integer orderId) throws Exception {
-        HashMap<String, String> params = new HashMap<>();
-        params.put("action", "status");
-        params.put("version", "3");
-        params.put("order_id", orderId.toString());
+    private Map<String, Object> callApi(Map<String, String> params) {
+        try {
+            return liqPay.api(REQUEST_PATH, params);
+        } catch (Exception e) {
+            throw new LiqPayException("LiqPay request failed", e);
+        }
+    }
 
-        LiqPay liqpay = new LiqPay(this.publicKey, this.privateKey);
-        return liqpay.api("request", params);
+    private String sign(String data) {
+        return LiqPayUtil.base64_encode(LiqPayUtil.sha1(privateKey + data + privateKey));
     }
 }

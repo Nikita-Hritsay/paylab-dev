@@ -37,7 +37,7 @@ public class LiqPayProviderController {
     }
 
     @GetMapping("/paymentStatus")
-    public Map<String, Object> getPaymentStatus(@RequestParam Integer orderId) throws Exception {
+    public Map<String, Object> getPaymentStatus(@RequestParam Integer orderId) {
         return liqPayProviderService.getPaymentStatus(orderId);
     }
 }
