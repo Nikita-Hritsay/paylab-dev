@@ -7,3 +7,4 @@ out
 *.backup
 tfplan
 application.env
+application.properties
