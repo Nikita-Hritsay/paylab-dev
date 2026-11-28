@@ -146,9 +146,12 @@ Order response:
   "currency": "eur",
   "status": "CREATED",
   "createdAt": "2026-11-25T10:00:00Z",
-  "updatedAt": "2026-11-25T10:00:00Z"
+  "updatedAt": "2026-11-25T10:00:00Z",
+  "checkoutUrl": "https://www.liqpay.ua/api/3/checkout?data=<data>&signature=<signature>"
 }
 ```
+
+`checkoutUrl` is the LiqPay payment page link. `POST` and `GET` populate it while the order is in status `CREATED`; otherwise, and in `PUT` responses, it is `null`.
 
 ## Payment endpoints
 

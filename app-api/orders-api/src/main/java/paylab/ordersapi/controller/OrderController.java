@@ -19,6 +19,7 @@ import paylab.ordersapi.dto.CreateOrderRequest;
 import paylab.ordersapi.dto.OrderResponse;
 import paylab.ordersapi.dto.UpdateOrderRequest;
 import paylab.ordersapi.model.Order;
+import paylab.ordersapi.model.OrderStatus;
 import paylab.ordersapi.service.OrderService;
 import paylab.paymentprovider.dtos.CreateCheckoutDTO;
 import paylab.paymentprovider.services.LiqPayProviderService;
@@ -34,13 +35,12 @@ public class OrderController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse create(@Valid @RequestBody CreateOrderRequest request) {
-        Order order = service.create(request);
-        return OrderResponse.from(order, liqPayProviderService.createCheckoutUrl(checkoutFor(order)));
+        return toResponseWithCheckout(service.create(request));
     }
 
     @GetMapping("/{orderId}")
     public OrderResponse get(@PathVariable String orderId) {
-        return OrderResponse.from(service.get(orderId));
+        return toResponseWithCheckout(service.get(orderId));
     }
 
     @PutMapping("/{orderId}")
@@ -52,6 +52,14 @@ public class OrderController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String orderId) {
         service.delete(orderId);
+    }
+
+    /** Adds a checkout URL only while the order is still awaiting payment (CREATED). */
+    private OrderResponse toResponseWithCheckout(Order order) {
+        if (order.getStatus() != OrderStatus.CREATED) {
+            return OrderResponse.from(order);
+        }
+        return OrderResponse.from(order, liqPayProviderService.createCheckoutUrl(checkoutFor(order)));
     }
 
     private static CreateCheckoutDTO checkoutFor(Order order) {

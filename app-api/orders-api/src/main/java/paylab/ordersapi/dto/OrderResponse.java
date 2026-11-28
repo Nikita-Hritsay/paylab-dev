@@ -16,7 +16,7 @@ public record OrderResponse(
         Instant updatedAt,
         String checkoutUrl) {
 
-    /** For responses that do not start a payment: checkoutUrl is null. */
+    /** For responses without a payment link: checkoutUrl is null. */
     public static OrderResponse from(Order o) {
         return from(o, null);
     }
